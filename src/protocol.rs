@@ -1,16 +1,17 @@
 use data_type::DataType;
-use storage::memory_page::MemoryPage;
+use storage::MemoryPage;
 
+/// Serializes and writes values to MemoryPage.
+/// Always writes valus in the architertural endian currently.
 #[derive(Debug)]
 struct SerializeStream<'a> {
     position: usize,
     page: &'a mut MemoryPage,
 }
 
-/// Serializes and writes values to MemoryPage.
-/// Always writes valus in the architertural endian currently.
 impl<'a> SerializeStream<'a> {
-    pub fn new(page: &'a mut MemoryPage) -> SerializeStream {
+    /// Creates new streamer.
+    pub fn new(page: &'a mut MemoryPage) -> Self {
         SerializeStream {
             position: 0,
             page: page,

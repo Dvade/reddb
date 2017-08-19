@@ -1,7 +1,7 @@
 use std::sync::Mutex;
 use std::sync::Arc;
 
-use storage::memory_page::MemoryPage;
+use storage::MemoryPage;
 
 #[derive(Debug)]
 pub struct Storage {
@@ -10,7 +10,7 @@ pub struct Storage {
 
 impl Storage {
     /// Create new Storage
-    pub fn new() -> Storage {
+    pub fn new() -> Self {
         Storage { root: Vec::new() }
     }
 }

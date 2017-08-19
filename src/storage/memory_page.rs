@@ -8,7 +8,7 @@ pub struct MemoryPage {
 
 impl MemoryPage {
     /// Creates new instance of MemoryPage with the specific size
-    pub fn new(len: usize) -> MemoryPage {
+    pub fn new(len: usize) -> Self {
         let vmem = vec![0; len];
         MemoryPage { mem: vmem.into_boxed_slice() }
     }
