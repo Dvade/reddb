@@ -109,11 +109,11 @@ impl Database {
 
 #[test]
 fn create_empty_table() {
-    let mut Database = Database::new();
+    let mut database = Database::new();
 
     let cfg = TableConfiguration::new("Table1");
 
-    let table = Database.create_table(cfg);
+    let table = database.create_table(cfg);
 
     assert!(table.name == "Table1");
 }

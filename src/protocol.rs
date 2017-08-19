@@ -61,7 +61,7 @@ fn write_several_ints() {
     let mut page = MemoryPage::new(4 + 4 + 4 + 3);
     let mut stream = SerializeStream::new(&mut page);
 
-    stream.write_int(20936508745).expect("Should not fail");
+    stream.write_int(2093608745).expect("Should not fail");
     stream.write_int(0).expect("Should not fail");
     stream.write_int(-1294).expect("Should not fail");
     stream.write_int(0).unwrap_err();
