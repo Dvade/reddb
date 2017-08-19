@@ -120,14 +120,14 @@ fn create_empty_table() {
 
 #[test]
 fn create_table_with_columns() {
-    let mut Database = Database::new();
+    let mut database = Database::new();
 
     let mut cfg = TableConfiguration::new("SomeTable");
     cfg.add_column(Column::new("foo", DataType::INTEGER, false)).expect("should not fail");
     cfg.add_column(Column::new("bar", DataType::BOOLEAN, false)).expect("should not fail");
     cfg.add_column(Column::new("baz", DataType::VARCHAR, false)).expect("should not fail");
 
-    let table = Database.create_table(cfg);
+    let table = database.create_table(cfg);
 
     assert!(table.name == "SomeTable");
 }

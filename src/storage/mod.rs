@@ -1,4 +1,4 @@
-mod memory_page;
-mod storage;
+pub mod memory_page;
+pub mod storage;
 
-pub use storage::storage::Storage;
+use storage::storage::Storage;

@@ -1,12 +1,9 @@
+use std::borrow::BorrowMut;
+use std::borrow::Borrow;
+
 #[derive(Debug)]
 pub struct MemoryPage {
     mem: Box<[u8]>,
-}
-
-/// Returns the size of memory page in OS
-fn os_page_size() -> usize {
-    // Temporary
-    64 * 1024
 }
 
 impl MemoryPage {
@@ -16,8 +13,13 @@ impl MemoryPage {
         MemoryPage { mem: vmem.into_boxed_slice() }
     }
 
-    /// Creates new instance of MemoryPage
-    pub fn new_os() -> MemoryPage {
-        MemoryPage::new(os_page_size())
+    /// Gets mutable reference to page data
+    pub fn data(&self) -> &[u8] {
+        self.mem.borrow()
+    }
+
+    /// Gets mutable reference to page data
+    pub fn data_mut(&mut self) -> &mut [u8] {
+        self.mem.borrow_mut()
     }
 }
