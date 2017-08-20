@@ -15,13 +15,13 @@ impl DataType {
     /// Get length of the static part of the column.
     pub fn static_len(self) -> usize {
         match self {
-            DataType::VARCHAR => mem::size_of::<usize>(),
-            DataType::VARBINARY => mem::size_of::<usize>(),
-            DataType::BOOLEAN => mem::size_of::<bool>(),
-            DataType::SMALLINT => mem::size_of::<i16>(),
-            DataType::INTEGER => mem::size_of::<i32>(),
-            DataType::BIGINT => mem::size_of::<i64>(),
-            DataType::FLOAT => mem::size_of::<f64>(),
+            DataType::VARCHAR => 8,
+            DataType::VARBINARY => 8,
+            DataType::BOOLEAN => 1,
+            DataType::SMALLINT => 2,
+            DataType::INTEGER => 4,
+            DataType::BIGINT => 8,
+            DataType::FLOAT => 8,
         }
     }
 }
