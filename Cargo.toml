@@ -4,3 +4,4 @@ version = "0.1.0"
 authors = ["Igor Sapego <igorsapg@gmail.com>"]
 
 [dependencies]
+skiplist = "*"

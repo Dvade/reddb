@@ -1,4 +1,4 @@
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Ord, Eq, PartialOrd, PartialEq)]
 pub enum DataType {
     VARCHAR,
     VARBINARY,
