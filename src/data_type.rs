@@ -1,5 +1,3 @@
-use std::mem;
-
 #[derive(Debug, Copy, Clone, Ord, Eq, PartialOrd, PartialEq)]
 pub enum DataType {
     VARCHAR,
