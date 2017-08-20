@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use data_type::DataType;
 use storage::MemoryPage;
+use protocol::DeserializeStream;
 
 /// Reference to indexed data.
 pub struct DataReference {
@@ -20,6 +21,14 @@ impl DataReference {
             pos: pos,
         }
     }
+
+    /// Deserializes value as an integer.
+    pub fn to_int(&self) -> i32 {
+        assert!(self.data_type == DataType::INTEGER);
+
+        let mut rs = DeserializeStream::new(&self.page, self.pos);
+        rs.read_int().unwrap()
+    }
 }
 
 impl PartialOrd for DataReference {
@@ -27,7 +36,10 @@ impl PartialOrd for DataReference {
         if self.data_type != other.data_type {
             None
         } else {
-            unimplemented!();
+            match self.data_type {
+                DataType::INTEGER => self.to_int().partial_cmp(&other.to_int()),
+                _ => unimplemented!(),
+            }
         }
     }
 }
