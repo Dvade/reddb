@@ -1,6 +1,6 @@
 use data_type::DataType;
 use storage::MemoryPage;
-use std::mem;
+use std::mem::transmute;
 
 /// Serializes and writes values to MemoryPage.
 /// Always writes values in the architertural endian currently.
@@ -123,34 +123,34 @@ impl<'a> SerializeStream<'a> {
         self.check_static_type_len(DataType::FLOAT)?;
 
         let transumuted = unsafe {
-            mem::transmute::<f64, i64>(val)
+            transmute::<f64, i64>(val)
         };
 
         self.write_bigint(transumuted)
     }
 
 
-    /// Write usize to stream.
-    fn write_usize(&mut self, val: usize) -> Result<(), String> {
-        self.check_static_type_len(DataType::VARBINARY)?;
+    /// Write u32 to stream.
+    fn write_u32(&mut self, val: u32) -> Result<(), String> {
+        self.check_available_space(4)?;
 
         let mem = self.page.data_mut();
-        let val_size = mem::size_of_val(&val);
 
-        for byte_number in 0..val_size {
-            mem[self.position + byte_number] = (val >> (8 * byte_number)) as u8;
-        }
+        mem[self.position] = val as u8;
+        mem[self.position + 1] = (val >> 8) as u8;
+        mem[self.position + 2] = (val >> 16) as u8;
+        mem[self.position + 3] = (val >> 24) as u8;
 
-        self.position += val_size;
+        self.position += 4;
 
         Ok(())
     }
 
     /// Write VARCHAR to stream.
-    pub fn write_varchar(&mut self, val: String) -> Result<(), String> {
+    pub fn write_varchar(&mut self, val: &str) -> Result<(), String> {
         self.check_dynamic_type_len(DataType::VARCHAR, val.len())?;
 
-        self.write_usize(val.len())?;
+        self.write_u32(val.len() as u32)?;
 
         let mem = self.page.data_mut();
 
@@ -164,9 +164,9 @@ impl<'a> SerializeStream<'a> {
 
     /// Write VARBINARY to stream.
     pub fn write_varbinary(&mut self, val: &[u8]) -> Result<(), String> {
-        self.check_dynamic_type_len(DataType::VARCHAR, val.len())?;
+        self.check_dynamic_type_len(DataType::VARBINARY, val.len())?;
 
-        self.write_usize(val.len())?;
+        self.write_u32(val.len() as u32)?;
 
         let mem = self.page.data_mut();
 
@@ -248,7 +248,7 @@ fn write_several_ints() {
 
 #[test]
 fn write_signle_smallint() {
-    let mut page = MemoryPage::new(mem::size_of::<u16>());
+    let mut page = MemoryPage::new(2);
     let mut stream = SerializeStream::new(&mut page, 0);
 
     stream.write_smallint(42).expect("Should not fail");
@@ -257,7 +257,7 @@ fn write_signle_smallint() {
 
 #[test]
 fn write_several_smallints() {
-    let mut page = MemoryPage::new(3 * mem::size_of::<u16>() + 1);
+    let mut page = MemoryPage::new(3 * 2 + 1);
     let mut stream = SerializeStream::new(&mut page, 0);
 
     stream.write_smallint(11).expect("Should not fail");
@@ -268,7 +268,7 @@ fn write_several_smallints() {
 
 #[test]
 fn write_signle_bigint() {
-    let mut page = MemoryPage::new(mem::size_of::<u64>());
+    let mut page = MemoryPage::new(8);
     let mut stream = SerializeStream::new(&mut page, 0);
 
     stream.write_bigint(42).expect("Should not fail");
@@ -277,7 +277,7 @@ fn write_signle_bigint() {
 
 #[test]
 fn write_several_bigints() {
-    let mut page = MemoryPage::new(3 * mem::size_of::<u64>() + 7);
+    let mut page = MemoryPage::new(3 * 8 + 7);
     let mut stream = SerializeStream::new(&mut page, 0);
 
     stream.write_bigint(11).expect("Should not fail");
@@ -288,7 +288,7 @@ fn write_several_bigints() {
 
 #[test]
 fn write_signle_bool() {
-    let mut page = MemoryPage::new(mem::size_of::<bool>());
+    let mut page = MemoryPage::new(1);
     let mut stream = SerializeStream::new(&mut page, 0);
 
     stream.write_bool(true).expect("Should not fail");
@@ -297,7 +297,7 @@ fn write_signle_bool() {
 
 #[test]
 fn write_several_bools() {
-    let mut page = MemoryPage::new(3 * mem::size_of::<bool>());
+    let mut page = MemoryPage::new(3 * 1);
     let mut stream = SerializeStream::new(&mut page, 0);
 
     stream.write_bool(true).expect("Should not fail");
@@ -308,7 +308,7 @@ fn write_several_bools() {
 
 #[test]
 fn write_signle_float() {
-    let mut page = MemoryPage::new(mem::size_of::<f64>());
+    let mut page = MemoryPage::new(8);
     let mut stream = SerializeStream::new(&mut page, 0);
 
     stream.write_float(42.05).expect("Should not fail");
@@ -317,7 +317,7 @@ fn write_signle_float() {
 
 #[test]
 fn write_several_float() {
-    let mut page = MemoryPage::new(3 * mem::size_of::<f64>() + 7);
+    let mut page = MemoryPage::new(3 * 8 + 7);
     let mut stream = SerializeStream::new(&mut page, 0);
 
     stream.write_float(11.05).expect("Should not fail");
@@ -328,9 +328,9 @@ fn write_several_float() {
 
 #[test]
 fn write_signle_string() {
-    let test = "test".to_string();
-    let test1 = "test".to_string();
-    let mut page = MemoryPage::new(test.len() + mem::size_of_val(&test.len()));
+    let test = "test";
+    let test1 = "test";
+    let mut page = MemoryPage::new(test.len() + 4);
     let mut stream = SerializeStream::new(&mut page, 0);
 
     stream.write_varchar(test).expect("Should not fail");
@@ -339,22 +339,22 @@ fn write_signle_string() {
 
 #[test]
 fn write_several_strings() {
-    let test = "test".to_string();
-    let test1 = "test1".to_string();
-    let test2 = "test2".to_string();
-    let mut page = MemoryPage::new(3 * mem::size_of::<usize>() + test.len() + test1.len() + test2.len());
+    let test = "test";
+    let test1 = "test1";
+    let test2 = "test2";
+    let mut page = MemoryPage::new(3 * 4 + test.len() + test1.len() + test2.len());
     let mut stream = SerializeStream::new(&mut page, 0);
 
     stream.write_varchar(test).expect("Should not fail");
     stream.write_varchar(test1).expect("Should not fail");
     stream.write_varchar(test2).expect("Should not fail");
-    stream.write_varchar("error".to_string()).unwrap_err();
+    stream.write_varchar("error").unwrap_err();
 }
 
 #[test]
 fn write_signle_array() {
     let arr: [u8; 5] = [1, 2, 3, 4, 5];
-    let mut page = MemoryPage::new(arr.len() + mem::size_of_val(&arr.len()));
+    let mut page = MemoryPage::new(arr.len() + 4);
     let mut stream = SerializeStream::new(&mut page, 0);
 
     stream.write_varbinary(&arr).expect("Should not fail");
@@ -365,7 +365,7 @@ fn write_signle_array() {
 fn write_several_arrays() {
     let arr: [u8; 5] = [1, 2, 3, 4, 5];
 
-    let mut page = MemoryPage::new(3 * mem::size_of::<usize>() + arr.len() + arr.len() + arr.len());
+    let mut page = MemoryPage::new(3 * 4 + arr.len() + arr.len() + arr.len());
     let mut stream = SerializeStream::new(&mut page, 0);
 
     stream.write_varbinary(&arr).expect("Should not fail");
@@ -377,12 +377,12 @@ fn write_several_arrays() {
 #[test]
 fn write_all_types() {
     let arr: [u8; 5] = [1, 2, 3, 4, 5];
-    let test = "test".to_string();
+    let test = "test";
 
-    let mut page = MemoryPage::new(2 * mem::size_of::<usize>() + arr.len() + test.len() + 
-                                   mem::size_of::<bool>() + mem::size_of::<i32>() + 
-                                   mem::size_of::<i16>() + mem::size_of::<i64>() + 
-                                   mem::size_of::<f64>());
+    let mut page = MemoryPage::new(2 * 4 + arr.len() + test.len() + 
+                                   1 + 4 + 
+                                   2 + 8 + 
+                                   8);
     let mut stream = SerializeStream::new(&mut page, 0);
 
     stream.write_bool(true).expect("Should not fail");
