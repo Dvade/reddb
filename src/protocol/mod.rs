@@ -2,6 +2,8 @@ use data_type::DataType;
 use storage::MemoryPage;
 use std::mem::transmute;
 
+mod packer;
+
 /// Serializes and writes values to MemoryPage.
 /// Always writes values in the architertural endian currently.
 #[derive(Debug)]
