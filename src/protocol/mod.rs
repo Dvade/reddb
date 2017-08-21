@@ -1,6 +1,5 @@
 use data_type::DataType;
 use storage::MemoryPage;
-use std::mem::transmute;
 
 mod packer;
 
@@ -62,11 +61,9 @@ impl<'a> SerializeStream<'a> {
         self.check_static_type_len(DataType::INTEGER)?;
 
         let mem = self.page.data_mut();
+        let len = mem.len();
 
-        mem[self.position] = val as u8;
-        mem[self.position + 1] = (val >> 8) as u8;
-        mem[self.position + 2] = (val >> 16) as u8;
-        mem[self.position + 3] = (val >> 24) as u8;
+        packer::pack_int(&mut mem[self.position..len], val);
 
         self.position += 4;
 
@@ -78,9 +75,9 @@ impl<'a> SerializeStream<'a> {
         self.check_static_type_len(DataType::SMALLINT)?;
 
         let mem = self.page.data_mut();
+        let len = mem.len();
 
-        mem[self.position] = val as u8;
-        mem[self.position + 1] = (val >> 8) as u8;
+        packer::pack_smallint(&mut mem[self.position..len], val);
 
         self.position += 2;
 
@@ -92,15 +89,9 @@ impl<'a> SerializeStream<'a> {
         self.check_static_type_len(DataType::BIGINT)?;
 
         let mem = self.page.data_mut();
+        let len = mem.len();
 
-        mem[self.position] = val as u8;
-        mem[self.position + 1] = (val >> 8) as u8;
-        mem[self.position + 2] = (val >> 16) as u8;
-        mem[self.position + 3] = (val >> 24) as u8;
-        mem[self.position + 4] = (val >> 32) as u8;
-        mem[self.position + 5] = (val >> 40) as u8;
-        mem[self.position + 6] = (val >> 48) as u8;
-        mem[self.position + 7] = (val >> 56) as u8;
+        packer::pack_bigint(&mut mem[self.position..len], val);
 
         self.position += 8;
 
@@ -112,8 +103,9 @@ impl<'a> SerializeStream<'a> {
         self.check_static_type_len(DataType::BOOLEAN)?;
 
         let mem = self.page.data_mut();
+        let len = mem.len();
 
-        mem[self.position] = val as u8;
+        packer::pack_bool(&mut mem[self.position..len], val);
 
         self.position += 1;
 
@@ -124,26 +116,12 @@ impl<'a> SerializeStream<'a> {
     pub fn write_float(&mut self, val: f64) -> Result<(), String> {
         self.check_static_type_len(DataType::FLOAT)?;
 
-        let transumuted = unsafe {
-            transmute::<f64, i64>(val)
-        };
-
-        self.write_bigint(transumuted)
-    }
-
-
-    /// Write u32 to stream.
-    fn write_u32(&mut self, val: u32) -> Result<(), String> {
-        self.check_available_space(4)?;
-
         let mem = self.page.data_mut();
+        let len = mem.len();
 
-        mem[self.position] = val as u8;
-        mem[self.position + 1] = (val >> 8) as u8;
-        mem[self.position + 2] = (val >> 16) as u8;
-        mem[self.position + 3] = (val >> 24) as u8;
+        packer::pack_float(&mut mem[self.position..len], val);
 
-        self.position += 4;
+        self.position += 8;
 
         Ok(())
     }
@@ -152,14 +130,12 @@ impl<'a> SerializeStream<'a> {
     pub fn write_varchar(&mut self, val: &str) -> Result<(), String> {
         self.check_dynamic_type_len(DataType::VARCHAR, val.len())?;
 
-        self.write_u32(val.len() as u32)?;
-
         let mem = self.page.data_mut();
+        let len = mem.len();
 
-        for b in val.as_bytes() {
-            mem[self.position] = *b as u8;
-            self.position += 1;
-        }
+        packer::pack_string(&mut mem[self.position..len], val);
+
+        self.position += val.len() + 4; // Here we skip 4 bytes for length
 
         Ok(())
     }
@@ -168,14 +144,12 @@ impl<'a> SerializeStream<'a> {
     pub fn write_varbinary(&mut self, val: &[u8]) -> Result<(), String> {
         self.check_dynamic_type_len(DataType::VARBINARY, val.len())?;
 
-        self.write_u32(val.len() as u32)?;
-
         let mem = self.page.data_mut();
+        let len = mem.len();
 
-        for b in val {
-            mem[self.position] = *b as u8;
-            self.position += 1;
-        }
+        packer::pack_array(&mut mem[self.position..len], val);
+
+        self.position += val.len() + 4; // Here we skip 4 bytes for length
 
         Ok(())
     }
@@ -269,7 +243,7 @@ fn write_several_smallints() {
 }
 
 #[test]
-fn write_signle_bigint() {
+fn write_single_bigint() {
     let mut page = MemoryPage::new(8);
     let mut stream = SerializeStream::new(&mut page, 0);
 
@@ -289,7 +263,7 @@ fn write_several_bigints() {
 }
 
 #[test]
-fn write_signle_bool() {
+fn write_single_bool() {
     let mut page = MemoryPage::new(1);
     let mut stream = SerializeStream::new(&mut page, 0);
 
@@ -309,7 +283,7 @@ fn write_several_bools() {
 }
 
 #[test]
-fn write_signle_float() {
+fn write_single_float() {
     let mut page = MemoryPage::new(8);
     let mut stream = SerializeStream::new(&mut page, 0);
 
@@ -329,7 +303,7 @@ fn write_several_float() {
 }
 
 #[test]
-fn write_signle_string() {
+fn write_single_string() {
     let test = "test";
     let test1 = "test";
     let mut page = MemoryPage::new(test.len() + 4);
