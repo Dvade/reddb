@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use data_type::DataType;
 use storage::MemoryPage;
-use protocol::DeserializeStream;
+use protocol::deserialize_stream::DeserializeStream;
 
 /// Reference to indexed data.
 pub struct DataReference {
