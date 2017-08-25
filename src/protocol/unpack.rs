@@ -14,7 +14,7 @@ pub fn unpack_int(data: &[u8]) -> i32 {
 fn test_unpack_int_success() {
     let array: [u8; 4] = [0x11, 0x22, 0x33, 0x44];
     let res: i32 = unpack_int(&array);
-    assert_eq!(res, 1144201745);
+    assert_eq!(res, 0x44332211);
 }
 
 #[test]
@@ -35,7 +35,7 @@ pub fn unpack_smallint(data: &[u8]) -> i16 {
 fn test_unpack_smallint_success() {
     let array: [u8; 2] = [0x11, 0x22];
     let res: i16 = unpack_smallint(&array);
-    assert_eq!(res, 8721);
+    assert_eq!(res, 0x2211);
 }
 
 #[test]
@@ -46,7 +46,7 @@ fn test_unpack_smallint_fail() {
 }
 
 pub fn unpack_bigint(data: &[u8]) -> i64 {
-    assert!(data.len() >= 8, "Unable to unpack i16 from provided buffer. Not enough space");
+    assert!(data.len() >= 8, "Unable to unpack i64 from provided buffer. Not enough space");
 
     (data[0] as i64 & 0xFFi64) |
     (data[1] as i64 & 0xFFi64) << 8 |
@@ -62,7 +62,7 @@ pub fn unpack_bigint(data: &[u8]) -> i64 {
 fn test_unpack_bigint_success() {
     let array: [u8; 8] = [0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88];
     let res: i64 = unpack_bigint(&array);
-    assert_eq!(res, -8613303245920329199);
+    assert_eq!(res, 0x8877665544332211u64 as i64);
 }
 
 #[test]
@@ -113,8 +113,15 @@ pub fn unpack_bool(data: &[u8]) -> bool {
 }
 
 #[test]
-fn test_unpack_bool_success() {
+fn test_unpack_bool_success_1() {
     let array: [u8; 1] = [0x01];
+    let res: bool = unpack_bool(&array);
+    assert_eq!(res, true);
+}
+
+#[test]
+fn test_unpack_bool_success_2() {
+    let array: [u8; 1] = [0x42];
     let res: bool = unpack_bool(&array);
     assert_eq!(res, true);
 }
@@ -126,12 +133,35 @@ fn test_unpack_bool_fail() {
     unpack_bool(&array);
 }
 
+pub fn unpack_unsigned(data: &[u8]) -> u32 {
+    assert!(data.len() >= 4, "Unable to unpack u32 from provided buffer. Not enough space, available {}", data.len());
+
+    (data[0] as u32 & 0xFFu32) |
+    (data[1] as u32 & 0xFFu32) << 8 |
+    (data[2] as u32 & 0xFFu32) << 16 |
+    (data[3] as u32 & 0xFFu32) << 24
+}
+
+#[test]
+fn test_unpack_unsigned_success() {
+    let array: [u8; 4] = [0x11, 0x22, 0x33, 0x44];
+    let res: u32 = unpack_unsigned(&array);
+    assert_eq!(res, 0x44332211);
+}
+
+#[test]
+#[should_panic]
+fn test_unpack_unsigned_fail() {
+    let array: [u8; 3] = [0; 3];
+    unpack_unsigned(&array);
+}
+
 pub fn unpack_string(data: &[u8]) -> &str {
     assert!(data.len() >= 4, "Unable to unpack string length from provided buffer. Not enough space");
 
-    let len = unpack_int(data) as usize;
+    let len = unpack_unsigned(data) as usize;
 
-    assert!(data.len() - 4 >= len as usize, "Unable to unpack string(with length: {}) from provided buffer. Not enough space", len);
+    assert!(data.len() - 4 >= len, "Unable to unpack string(with length: {}) from provided buffer. Not enough space", len);
 
     let result = match str::from_utf8(&data[4..4 + len]) {
         Ok(v) => v,
@@ -146,6 +176,13 @@ fn test_unpack_string_success() {
     let array: [u8; 8] = [4, 0, 0, 0, 240, 159, 146, 150];
     let res = unpack_string(&array);
     assert_eq!(res, "💖");
+}
+
+#[test]
+fn test_unpack_string_success_ascii() {
+    let array: [u8; 8] = [4, 0, 0, 0, 't' as u8, 'e' as u8, 's' as u8, 't' as u8];
+    let res = unpack_string(&array);
+    assert_eq!(res, "test");
 }
 
 #[test]
@@ -165,9 +202,9 @@ fn test_unpack_string_fail_on_string() {
 pub fn unpack_array(data: &[u8]) -> &[u8] {
     assert!(data.len() >= 4, "Unable to unpack array size from provided buffer. Not enough space");
 
-    let len = unpack_int(data) as usize;
+    let len = unpack_unsigned(data) as usize;
 
-    assert!(data.len() - 4 >= len as usize, "Unable to unpack array(with size: {}) from provided buffer. Not enough space", len);
+    assert!(data.len() - 4 >= len, "Unable to unpack array(with size: {}) from provided buffer. Not enough space", len);
 
     &data[4..4 + len]
 }
@@ -177,7 +214,7 @@ fn test_unpack_array_success() {
     let array: [u8; 8] = [4, 0, 0, 0, 11, 22, 33, 44];
     let res: &[u8] = unpack_array(&array);
 
-    assert_eq!(&array[4..], res, "rest len = {}", res.len())
+    assert_eq!(&array[4..], res);
 }
 
 #[test]

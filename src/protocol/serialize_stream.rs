@@ -1,6 +1,6 @@
 use data_type::DataType;
 use storage::MemoryPage;
-use protocol::packer;
+use protocol::pack;
 
 /// Serializes and writes values to MemoryPage.
 /// Always writes values in the architertural endian currently.
@@ -36,11 +36,9 @@ impl<'a> SerializeStream<'a> {
         let field_len: isize = field_type.static_len() as isize;
 
         match self.check_available_space(field_len) {
-            Err(e) => return Err(format!("Unable to write {:?}: {:?}", field_type, e)),
-            Ok(_) => ()
+            Err(e) => Err(format!("Unable to write {:?}: {:?}", field_type, e)),
+            Ok(_) => Ok(())
         }
-
-        Ok(())
     }
 
     /// Check if we have enough memory in page to write a dynamic typed value.
@@ -49,10 +47,8 @@ impl<'a> SerializeStream<'a> {
 
         match self.check_available_space(field_len + size as isize) {
             Err(e) => return Err(format!("Unable to write {:?}: {:?}", field_type, e)),
-            Ok(_) => ()
+            Ok(_) => Ok(())
         }
-
-        Ok(())
     }
 
     /// Write INTEGER to stream.
@@ -62,9 +58,7 @@ impl<'a> SerializeStream<'a> {
         let mem = self.page.data_mut();
         let len = mem.len();
 
-        packer::pack_int(&mut mem[self.position..len], val);
-
-        self.position += 4;
+        self.position += pack::pack_int(&mut mem[self.position..len], val);
 
         Ok(())
     }
@@ -76,9 +70,7 @@ impl<'a> SerializeStream<'a> {
         let mem = self.page.data_mut();
         let len = mem.len();
 
-        packer::pack_smallint(&mut mem[self.position..len], val);
-
-        self.position += 2;
+        self.position += pack::pack_smallint(&mut mem[self.position..len], val);
 
         Ok(())
     }
@@ -90,9 +82,7 @@ impl<'a> SerializeStream<'a> {
         let mem = self.page.data_mut();
         let len = mem.len();
 
-        packer::pack_bigint(&mut mem[self.position..len], val);
-
-        self.position += 8;
+        self.position += pack::pack_bigint(&mut mem[self.position..len], val);
 
         Ok(())
     }
@@ -104,9 +94,7 @@ impl<'a> SerializeStream<'a> {
         let mem = self.page.data_mut();
         let len = mem.len();
 
-        packer::pack_bool(&mut mem[self.position..len], val);
-
-        self.position += 1;
+        self.position += pack::pack_bool(&mut mem[self.position..len], val);
 
         Ok(())
     }
@@ -118,9 +106,7 @@ impl<'a> SerializeStream<'a> {
         let mem = self.page.data_mut();
         let len = mem.len();
 
-        packer::pack_float(&mut mem[self.position..len], val);
-
-        self.position += 8;
+        self.position += pack::pack_float(&mut mem[self.position..len], val);
 
         Ok(())
     }
@@ -132,9 +118,7 @@ impl<'a> SerializeStream<'a> {
         let mem = self.page.data_mut();
         let len = mem.len();
 
-        packer::pack_string(&mut mem[self.position..len], val);
-
-        self.position += val.len() + 4; // Here we skip 4 bytes for length
+        self.position += pack::pack_string(&mut mem[self.position..len], val);
 
         Ok(())
     }
@@ -146,9 +130,7 @@ impl<'a> SerializeStream<'a> {
         let mem = self.page.data_mut();
         let len = mem.len();
 
-        packer::pack_array(&mut mem[self.position..len], val);
-
-        self.position += val.len() + 4; // Here we skip 4 bytes for length
+        self.position += pack::pack_array(&mut mem[self.position..len], val);
 
         Ok(())
     }
@@ -308,9 +290,7 @@ fn write_all_types() {
     let test = "test";
 
     let mut page = MemoryPage::new(2 * 4 + arr.len() + test.len() + 
-                                   1 + 4 + 
-                                   2 + 8 + 
-                                   8);
+                                   1 + 4 + 2 + 8 + 8);
     let mut stream = SerializeStream::new(&mut page, 0);
 
     stream.write_bool(true).expect("Should not fail");
