@@ -163,12 +163,7 @@ pub fn unpack_string(data: &[u8]) -> &str {
 
     assert!(data.len() - 4 >= len, "Unable to unpack string(with length: {}) from provided buffer. Not enough space", len);
 
-    let result = match str::from_utf8(&data[4..4 + len]) {
-        Ok(v) => v,
-        Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
-    };
-
-    result
+    str::from_utf8(&data[4..4 + len]).expect("Invalid UTF-8 sequence")
 }
 
 #[test]
