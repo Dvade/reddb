@@ -1,7 +1,7 @@
 use std::borrow::BorrowMut;
 use std::borrow::Borrow;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct MemoryPage {
     mem: Box<[u8]>,
 }

@@ -23,3 +23,15 @@ impl DataType {
         }
     }
 }
+
+#[derive(Debug, Clone, PartialOrd, PartialEq)]
+pub enum Data {
+    VARCHAR(String),
+    VARBINARY(Vec<u8>),
+    BOOLEAN(bool),
+    SMALLINT(i16),
+    INTEGER(i32),
+    BIGINT(i64),
+    FLOAT(f64),
+    EMPTY,
+}

@@ -1,11 +1,11 @@
 use std::sync::Mutex;
 use std::sync::Arc;
 
-use storage::MemoryPage;
+use data_type::Data;
 
 #[derive(Debug)]
 pub struct Storage {
-    root: Vec<Arc<Mutex<MemoryPage>>>,
+    root: Vec<Arc<Mutex<Vec<Data>>>>,
 }
 
 impl Storage {

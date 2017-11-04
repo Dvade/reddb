@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 use std::sync::Arc;
+use std::sync::Mutex;
 use data_type::DataType;
+use data_type::Data;
 
 #[derive(Debug)]
 pub struct Column {
@@ -83,11 +85,16 @@ impl Table {
                         name,
                         self.name));
     }
+
+    /// Insert row into table.
+    fn insert_row(&mut self, row: Vec<Data>) -> Result<(), String> {
+        Err("Not implemented".to_owned())
+    }
 }
 
 #[derive(Debug)]
 pub struct Database {
-    tables: BTreeMap<String, Arc<Table>>,
+    tables: BTreeMap<String, Arc<Mutex<Table>>>,
 }
 
 impl Database {
@@ -97,13 +104,18 @@ impl Database {
     }
 
     /// Creates new table in Database using provided configuration.
-    pub fn create_table(&mut self, cfg: TableConfiguration) -> Arc<Table> {
+    pub fn create_table(&mut self, cfg: TableConfiguration) -> Arc<Mutex<Table>> {
         let name = cfg.name.clone();
 
         let table = Table::new(cfg);
-        self.tables.insert(name.clone(), Arc::new(table));
+        self.tables.insert(name.clone(), Arc::new(Mutex::new(table)));
 
         return self.tables.get(&name).unwrap().clone();
+    }
+
+    /// Get table.
+    pub fn get_table(&self, name: &str) -> Option<&Arc<Mutex<Table>>> {
+        self.tables.get(name)
     }
 }
 
@@ -115,7 +127,7 @@ fn create_empty_table() {
 
     let table = database.create_table(cfg);
 
-    assert!(table.name == "Table1");
+    assert!(table.lock().unwrap().name == "Table1");
 }
 
 #[test]
@@ -129,5 +141,25 @@ fn create_table_with_columns() {
 
     let table = database.create_table(cfg);
 
-    assert!(table.name == "SomeTable");
+    assert!(table.lock().unwrap().name == "SomeTable");
+}
+
+#[test]
+fn insert_row() {
+    let table_name = "TestTable";
+
+    let mut database = Database::new();
+
+    let mut cfg = TableConfiguration::new(table_name);
+    cfg.add_column(Column::new("c1", DataType::INTEGER, false)).expect("should not fail");
+    cfg.add_column(Column::new("c2", DataType::VARCHAR, false)).expect("should not fail");
+    cfg.add_column(Column::new("c3", DataType::BOOLEAN, false)).expect("should not fail");
+
+    database.create_table(cfg);
+
+    let table = database.get_table(table_name).expect("should return table");
+
+    let row = vec![Data::INTEGER(6), Data::EMPTY, Data::BOOLEAN(true)];
+
+    table.lock().unwrap().insert_row(row).expect("should not fail");
 }

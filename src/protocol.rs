@@ -37,7 +37,7 @@ impl<'a> SerializeStream<'a> {
 
         match self.check_available_space(field_len) {
             Err(e) => return Err(format!("Unable to write {:?}: {:?}", field_type, e)),
-            Ok(_) => ()
+            Ok(_) => (),
         }
 
         Ok(())
@@ -49,7 +49,7 @@ impl<'a> SerializeStream<'a> {
 
         match self.check_available_space(field_len + size as isize) {
             Err(e) => return Err(format!("Unable to write {:?}: {:?}", field_type, e)),
-            Ok(_) => ()
+            Ok(_) => (),
         }
 
         Ok(())
@@ -122,9 +122,7 @@ impl<'a> SerializeStream<'a> {
     pub fn write_float(&mut self, val: f64) -> Result<(), String> {
         self.check_static_type_len(DataType::FLOAT)?;
 
-        let transumuted = unsafe {
-            mem::transmute::<f64, i64>(val)
-        };
+        let transumuted = unsafe { mem::transmute::<f64, i64>(val) };
 
         self.write_bigint(transumuted)
     }
@@ -247,7 +245,7 @@ fn write_several_ints() {
 }
 
 #[test]
-fn write_signle_smallint() {
+fn write_single_smallint() {
     let mut page = MemoryPage::new(mem::size_of::<u16>());
     let mut stream = SerializeStream::new(&mut page, 0);
 
@@ -267,7 +265,7 @@ fn write_several_smallints() {
 }
 
 #[test]
-fn write_signle_bigint() {
+fn write_single_bigint() {
     let mut page = MemoryPage::new(mem::size_of::<u64>());
     let mut stream = SerializeStream::new(&mut page, 0);
 
@@ -287,7 +285,7 @@ fn write_several_bigints() {
 }
 
 #[test]
-fn write_signle_bool() {
+fn write_single_bool() {
     let mut page = MemoryPage::new(mem::size_of::<bool>());
     let mut stream = SerializeStream::new(&mut page, 0);
 
@@ -307,7 +305,7 @@ fn write_several_bools() {
 }
 
 #[test]
-fn write_signle_float() {
+fn write_single_float() {
     let mut page = MemoryPage::new(mem::size_of::<f64>());
     let mut stream = SerializeStream::new(&mut page, 0);
 
@@ -327,7 +325,7 @@ fn write_several_float() {
 }
 
 #[test]
-fn write_signle_string() {
+fn write_single_string() {
     let test = "test".to_string();
     let test1 = "test".to_string();
     let mut page = MemoryPage::new(test.len() + mem::size_of_val(&test.len()));
@@ -342,7 +340,8 @@ fn write_several_strings() {
     let test = "test".to_string();
     let test1 = "test1".to_string();
     let test2 = "test2".to_string();
-    let mut page = MemoryPage::new(3 * mem::size_of::<usize>() + test.len() + test1.len() + test2.len());
+    let mut page = MemoryPage::new(3 * mem::size_of::<usize>() + test.len() + test1.len() +
+                                   test2.len());
     let mut stream = SerializeStream::new(&mut page, 0);
 
     stream.write_varchar(test).expect("Should not fail");
@@ -352,7 +351,7 @@ fn write_several_strings() {
 }
 
 #[test]
-fn write_signle_array() {
+fn write_single_array() {
     let arr: [u8; 5] = [1, 2, 3, 4, 5];
     let mut page = MemoryPage::new(arr.len() + mem::size_of_val(&arr.len()));
     let mut stream = SerializeStream::new(&mut page, 0);
@@ -379,9 +378,11 @@ fn write_all_types() {
     let arr: [u8; 5] = [1, 2, 3, 4, 5];
     let test = "test".to_string();
 
-    let mut page = MemoryPage::new(2 * mem::size_of::<usize>() + arr.len() + test.len() + 
-                                   mem::size_of::<bool>() + mem::size_of::<i32>() + 
-                                   mem::size_of::<i16>() + mem::size_of::<i64>() + 
+    let mut page = MemoryPage::new(2 * mem::size_of::<usize>() + arr.len() + test.len() +
+                                   mem::size_of::<bool>() +
+                                   mem::size_of::<i32>() +
+                                   mem::size_of::<i16>() +
+                                   mem::size_of::<i64>() +
                                    mem::size_of::<f64>());
     let mut stream = SerializeStream::new(&mut page, 0);
 
