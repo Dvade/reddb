@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 use data_type::DataType;
 use data_type::Data;
+use storage::Storage;
 
 #[derive(Debug)]
 pub struct Column {
@@ -55,6 +56,7 @@ impl TableConfiguration {
 pub struct Table {
     name: String,
     columns: BTreeMap<String, Arc<Column>>,
+    storage: Storage,
 }
 
 impl Table {
@@ -63,6 +65,7 @@ impl Table {
         let mut table = Table {
             name: cfg.name,
             columns: cfg.columns,
+            storage: Storage::new(),
         };
 
         table.add_system_columns();
@@ -88,7 +91,9 @@ impl Table {
 
     /// Insert row into table.
     fn insert_row(&mut self, row: Vec<Data>) -> Result<(), String> {
-        Err("Not implemented".to_owned())
+        self.storage.insert(row);
+
+        Ok(())
     }
 }
 
@@ -145,7 +150,7 @@ fn create_table_with_columns() {
 }
 
 #[test]
-fn insert_row() {
+fn insert_single_row() {
     let table_name = "TestTable";
 
     let mut database = Database::new();
